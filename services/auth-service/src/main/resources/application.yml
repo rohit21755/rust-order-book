@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: auth-service
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/hft}
+    username: ${POSTGRES_USER:hft}
+    password: ${POSTGRES_PASSWORD:hft}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+server:
+  port: ${SERVER_PORT:8081}
+  netty:
+    connection-timeout: 5s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-please-use-32+-bytes-secret}
+    issuer: ${JWT_ISSUER:hft-auth-service}
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 7
+  rate-limit:
+    requests-per-minute: 100
+    window-seconds: 60
+  session:
+    ttl-minutes: 30
+  api-key:
+    prefix: hft_
+    length-bytes: 32
+  oauth-providers:
+    google:
+      jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+      issuer: https://accounts.google.com
+    github:
+      # GitHub OAuth tokens are opaque; introspection endpoint required for full support.
+      enabled: false
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:8080
+
+logging:
+  level:
+    root: INFO
+    com.hft.auth: DEBUG
+    org.springframework.security: INFO
+    io.r2dbc: INFO

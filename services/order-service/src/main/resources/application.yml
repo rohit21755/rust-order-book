@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: order-service
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/hft}
+    username: ${POSTGRES_USER:hft}
+    password: ${POSTGRES_PASSWORD:hft}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+server:
+  port: ${SERVER_PORT:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+order:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-please-use-32+-bytes-secret}
+    issuer: ${JWT_ISSUER:hft-auth-service}
+  supported-symbols:
+    - BTC-USDT
+    - ETH-USDT
+    - SOL-USDT
+    - ADA-USDT
+    - DOGE-USDT
+    - XRP-USDT
+  limits:
+    max-open-orders-per-symbol: 10
+    max-position-quantity: 100000
+    min-quantity: 0.00000001
+  cache:
+    order-ttl-hours: 24
+    idempotency-ttl-hours: 24
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    orders-topic: orders
+    dlq-topic: orders.DLQ
+    publish-retries: 3
+    publish-backoff-millis: 100
+    request-timeout-millis: 5000
+    delivery-timeout-millis: 15000
+    acks: all
+
+logging:
+  level:
+    root: INFO
+    com.hft.order: DEBUG
+    org.springframework.security: INFO
