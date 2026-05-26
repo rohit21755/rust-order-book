@@ -1,0 +1,41 @@
+{
+  "uid": "hft-kafka",
+  "title": "HFT Kafka",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["hft","kafka"],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Consumer Lag by Group/Topic",
+      "gridPos": {"x":0,"y":0,"w":24,"h":10},
+      "targets": [{"expr":"max by (consumer_group, topic) (kafka_consumer_lag)","legendFormat":"{{consumer_group}} {{topic}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Records Produced /s",
+      "gridPos": {"x":0,"y":10,"w":12,"h":8},
+      "targets": [{"expr":"sum by (topic) (rate(kafka_producer_record_send_total[1m]))","legendFormat":"{{topic}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Records Consumed /s",
+      "gridPos": {"x":12,"y":10,"w":12,"h":8},
+      "targets": [{"expr":"sum by (topic) (rate(kafka_consumer_records_consumed_total[1m]))","legendFormat":"{{topic}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 4, "type": "stat", "title": "DLQ Messages (1h)",
+      "gridPos": {"x":0,"y":18,"w":12,"h":6},
+      "targets": [{"expr":"sum(increase(kafka_dlq_received_total[1h]))","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 5, "type": "stat", "title": "Matching Engine Orders/sec",
+      "gridPos": {"x":12,"y":18,"w":12,"h":6},
+      "targets": [{"expr":"sum(rate(engine_orders_processed_total[1m]))","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    }
+  ]
+}

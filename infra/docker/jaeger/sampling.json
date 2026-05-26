@@ -1,0 +1,15 @@
+{
+  "service_strategies": [
+    { "service": "auth-service",         "type": "probabilistic", "param": 1.0 },
+    { "service": "order-service",        "type": "probabilistic", "param": 1.0 },
+    { "service": "market-data-service",  "type": "probabilistic", "param": 1.0 },
+    { "service": "portfolio-service",    "type": "probabilistic", "param": 1.0 },
+    { "service": "risk-engine",          "type": "probabilistic", "param": 1.0 },
+    { "service": "matching-engine",      "type": "probabilistic", "param": 1.0 }
+  ],
+  "default_strategy": {
+    "type": "probabilistic",
+    "param": 1.0,
+    "operation_strategies": []
+  }
+}

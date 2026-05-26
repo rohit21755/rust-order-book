@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: hft-dev
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: 'auth-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['auth-service:8081']
+        labels: { service: auth-service }
+
+  - job_name: 'order-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['order-service:8082']
+        labels: { service: order-service }
+
+  - job_name: 'market-data-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['market-data-service:8083']
+        labels: { service: market-data-service }
+
+  - job_name: 'portfolio-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['portfolio-service:8084']
+        labels: { service: portfolio-service }
+
+  - job_name: 'risk-engine'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['risk-engine:8085']
+        labels: { service: risk-engine }
+
+  - job_name: 'matching-engine'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['matching-engine:9091']
+        labels: { service: matching-engine }
+
+  - job_name: 'kafka-broker'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['kafka:9101']
+        labels: { service: kafka }
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -1,0 +1,13 @@
+[package]
+name = "proto-gen"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Protobuf codegen for HFT matching engine"
+
+[dependencies]
+prost = { workspace = true }
+prost-types = { workspace = true }
+
+[build-dependencies]
+prost-build = { workspace = true }

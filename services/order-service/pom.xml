@@ -36,6 +36,32 @@
             <version>${shared-lib.version}</version>
         </dependency>
 
+        <!-- gRPC client lib (build via: mvn -pl services/shared-grpc-lib install) -->
+        <dependency>
+            <groupId>com.hft</groupId>
+            <artifactId>shared-grpc-lib</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+
+        <!-- Observability (OTel + Micrometer Prometheus). -->
+        <dependency>
+            <groupId>com.hft</groupId>
+            <artifactId>shared-observability-lib</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+
+        <!-- FIX protocol (QuickFIX/J). FIX 4.2 messages required by spec. -->
+        <dependency>
+            <groupId>org.quickfixj</groupId>
+            <artifactId>quickfixj-core</artifactId>
+            <version>2.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.quickfixj</groupId>
+            <artifactId>quickfixj-messages-fix42</artifactId>
+            <version>2.3.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>

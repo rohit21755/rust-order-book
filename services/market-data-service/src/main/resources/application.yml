@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: market-data-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+
+server:
+  port: ${SERVER_PORT:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# shared-kafka-lib config
+hft:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    service-origin: market-data-service
+    consumer:
+      auto-offset-reset: latest
+      read-committed: true
+      max-in-flight: 64
+      max-retries: 3
+  grpc:
+    host: ${ENGINE_GRPC_HOST:localhost}
+    port: ${ENGINE_GRPC_PORT:50051}
+    tls-enabled: false
+    deadline-ms: 2000
+    pool-size: 4
+
+market:
+  supported-symbols:
+    - BTC-USDT
+    - ETH-USDT
+    - SOL-USDT
+    - ADA-USDT
+    - DOGE-USDT
+    - XRP-USDT
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-please-use-32+-bytes-secret}
+    issuer: ${JWT_ISSUER:hft-auth-service}
+  ws:
+    client-buffer-size: 1000
+    heartbeat-interval-ms: 30000
+    max-missed-pongs: 2
+    orderbook-push-ms: 100
+    ticker-push-ms: 1000
+    orderbook-depth: 10
+  cache:
+    ticker-ttl-seconds: 5
+    recent-trades-ttl-seconds: 60
+    recent-trades-max: 50
+  clickhouse:
+    url: ${CLICKHOUSE_URL:http://localhost:8123}
+    database: ${CLICKHOUSE_DB:default}
+    user: ${CLICKHOUSE_USER:default}
+    password: ${CLICKHOUSE_PASSWORD:}
+    batch-max-records: 100
+    batch-max-interval-ms: 1000
+    query-timeout-ms: 5000
+  kafka:
+    trades-topic: trades
+    orderbook-topic: orderbook-updates
+    portfolio-topic: portfolio-events
+
+logging:
+  level:
+    root: INFO
+    com.hft.marketdata: DEBUG

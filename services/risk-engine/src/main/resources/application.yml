@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: risk-engine
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 1s
+
+server:
+  port: ${SERVER_PORT:8085}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+hft:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    service-origin: risk-engine
+    producer:
+      acks: all
+      idempotence: true
+    consumer:
+      auto-offset-reset: earliest
+      read-committed: true
+      max-in-flight: 32
+      max-retries: 3
+
+risk:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-please-use-32+-bytes-secret}
+    issuer: ${JWT_ISSUER:hft-auth-service}
+  kafka:
+    orders-topic: orders
+    risk-events-topic: risk-events
+  cache:
+    balance-ttl-seconds: 5
+    price-ttl-seconds: 5
+    daily-pnl-ttl-seconds: 5
+  downstream:
+    portfolio-url: ${PORTFOLIO_URL:http://localhost:8084}
+    market-data-url: ${MARKET_DATA_URL:http://localhost:8083}
+    timeout-ms: 1500
+  # Hot-reloadable defaults; can be updated at runtime via PUT /api/risk/config.
+  parameters:
+    max-leverage: 10
+    max-position-size: 100000
+    max-order-value: 50000
+    max-daily-loss: -10000
+    abnormal-activity-threshold: 100
+    abnormal-activity-window-seconds: 60
+    price-deviation-pct: 0.05
+
+logging:
+  level:
+    root: INFO
+    com.hft.risk: DEBUG

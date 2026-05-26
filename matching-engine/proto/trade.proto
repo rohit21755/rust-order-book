@@ -1,0 +1,15 @@
+syntax = "proto3";
+package hft.trade.v1;
+
+message TradeEvent {
+  string trade_id = 1;
+  string buy_order_id = 2;
+  string sell_order_id = 3;
+  string buyer_user_id = 4;
+  string seller_user_id = 5;
+  string symbol = 6;
+  string price = 7;       // Decimal as string
+  string quantity = 8;    // Decimal as string
+  int64 executed_at_ms = 9;
+  uint64 sequence = 10;   // Monotonic per symbol
+}

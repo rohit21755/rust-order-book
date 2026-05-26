@@ -37,6 +37,51 @@ management:
     health:
       probes:
         enabled: true
+  metrics:
+    tags:
+      service: order-service
+      environment: ${HFT_ENV:dev}
+
+# OpenTelemetry — OTLP gRPC to Jaeger collector.
+otel:
+  service:
+    name: order-service
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4317}
+      protocol: grpc
+  traces:
+    sampler: ${OTEL_TRACES_SAMPLER:always_on}   # prod sim: traceidratio with arg 0.01
+    sampler.arg: ${OTEL_TRACES_SAMPLER_ARG:1.0}
+  metrics:
+    exporter: none                              # Prometheus already scrapes us
+  propagators: tracecontext,baggage             # W3C
+  resource:
+    attributes:
+      deployment.environment: ${HFT_ENV:dev}
+
+hft:
+  observability:
+    environment: ${HFT_ENV:dev}
+    service-name: order-service
+    kafka-tracing-enabled: true
+  fix:
+    enabled: ${HFT_FIX_ENABLED:false}
+    port: ${HFT_FIX_PORT:9876}
+    config-classpath: fix/acceptor.cfg
+    audit-log: ${HFT_FIX_AUDIT_LOG:/var/log/fix/audit.log}
+  grpc:
+    host: ${ENGINE_GRPC_HOST:localhost}
+    port: ${ENGINE_GRPC_PORT:50051}
+    tls-enabled: ${ENGINE_GRPC_TLS:false}
+    deadline-ms: 2000
+    pool-size: 4
+    circuit-breaker:
+      failure-rate-threshold: 50
+      sliding-window-size: 20
+      minimum-number-of-calls: 10
+      wait-duration-in-open-state-ms: 5000
+      slow-call-duration-threshold-ms: 50
 
 order:
   jwt:

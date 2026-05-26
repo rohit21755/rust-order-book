@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: portfolio-service-config, namespace: hft-platform }
+data:
+  R2DBC_URL: "r2dbc:postgresql://postgres:5432/hft"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  KAFKA_BOOTSTRAP: "kafka:9092"
+  MARKET_DATA_URL: "http://market-data-service:8083"
+  SERVER_PORT: "8084"
+  HFT_ENV: "prod-sim"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger.monitoring:4317"
+  OTEL_TRACES_SAMPLER: "traceidratio"
+  OTEL_TRACES_SAMPLER_ARG: "0.01"
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: portfolio-service-secret, namespace: hft-platform }
+type: Opaque
+stringData:
+  POSTGRES_USER: hft
+  POSTGRES_PASSWORD: change-me-please
+  JWT_SECRET: change-me-in-prod-please-use-32+-bytes-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: portfolio-service, namespace: hft-platform, labels: { app: portfolio-service } }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: portfolio-service } }
+  template:
+    metadata:
+      labels: { app: portfolio-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8084"
+    spec:
+      containers:
+        - name: portfolio-service
+          image: hft/portfolio-service:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8084 }]
+          envFrom:
+            - configMapRef: { name: portfolio-service-config }
+            - secretRef:    { name: portfolio-service-secret }
+          resources:
+            requests: { cpu: "300m", memory: "768Mi" }
+            limits:   { cpu: "1500m", memory: "1.5Gi" }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8084 }, initialDelaySeconds: 25, periodSeconds: 5 }
+          livenessProbe:  { httpGet: { path: /actuator/health/liveness,  port: 8084 }, initialDelaySeconds: 60, periodSeconds: 15 }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: portfolio-service, namespace: hft-platform }
+spec:
+  type: ClusterIP
+  selector: { app: portfolio-service }
+  ports: [{ port: 8084, targetPort: 8084 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: portfolio-service, namespace: hft-platform }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: portfolio-service }
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+    - type: Pods
+      pods:
+        metric: { name: kafka_consumer_lag }
+        target: { type: AverageValue, averageValue: "1000" }

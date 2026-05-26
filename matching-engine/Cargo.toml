@@ -1,0 +1,89 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/matching-engine",
+    "crates/orderbook",
+    "crates/kafka-bridge",
+    "crates/redis-bridge",
+    "crates/proto-gen",
+    "crates/grpc-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.78"
+
+[workspace.dependencies]
+# Numerics
+rust_decimal = { version = "1.36", features = ["serde-with-str"] }
+rust_decimal_macros = "1.36"
+
+# IDs / time
+uuid = { version = "1.10", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Collections
+indexmap = "2.5"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+prost = "0.13"
+prost-types = "0.13"
+
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+
+# Logging / errors
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+thiserror = "1"
+anyhow = "1"
+
+# Config
+config = { version = "0.14", default-features = false, features = ["toml", "yaml"] }
+
+# Kafka
+rdkafka = { version = "0.36", features = ["tokio", "ssl", "cmake-build"] }
+
+# Redis
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+
+# Metrics
+prometheus = "0.13"
+
+# Build
+prost-build = "0.13"
+
+# gRPC
+tonic = { version = "0.12", features = ["tls", "transport"] }
+tonic-build = "0.12"
+
+# Tests / bench
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.5"
+
+# Internal crates
+orderbook = { path = "crates/orderbook" }
+kafka-bridge = { path = "crates/kafka-bridge" }
+redis-bridge = { path = "crates/redis-bridge" }
+proto-gen = { path = "crates/proto-gen" }
+grpc-server = { path = "crates/grpc-server" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+strip = true
+debug = false
+
+[profile.bench]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+debug = true

@@ -1,0 +1,35 @@
+{
+  "uid": "hft-infra",
+  "title": "HFT Infrastructure",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["hft","infra"],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "15s",
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "JVM CPU per Service",
+      "gridPos": {"x":0,"y":0,"w":12,"h":8},
+      "targets": [{"expr":"sum by (service) (rate(process_cpu_seconds_total[1m]))","legendFormat":"{{service}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "JVM Heap Used per Service",
+      "gridPos": {"x":12,"y":0,"w":12,"h":8},
+      "targets": [{"expr":"sum by (service) (jvm_memory_used_bytes{area=\"heap\"})","legendFormat":"{{service}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "GC Pause Time per Service",
+      "gridPos": {"x":0,"y":8,"w":12,"h":8},
+      "targets": [{"expr":"sum by (service) (rate(jvm_gc_pause_seconds_sum[1m]))","legendFormat":"{{service}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "DB Connections (R2DBC)",
+      "gridPos": {"x":12,"y":8,"w":12,"h":8},
+      "targets": [{"expr":"sum by (service) (r2dbc_pool_acquired_connections)","legendFormat":"{{service}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    }
+  ]
+}

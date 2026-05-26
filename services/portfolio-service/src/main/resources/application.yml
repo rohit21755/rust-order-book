@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: portfolio-service
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/hft}
+    username: ${POSTGRES_USER:hft}
+    password: ${POSTGRES_PASSWORD:hft}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+server:
+  port: ${SERVER_PORT:8084}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+hft:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:29092}
+    service-origin: portfolio-service
+    producer:
+      acks: all
+      idempotence: true
+    consumer:
+      auto-offset-reset: earliest
+      read-committed: true
+      max-in-flight: 1          # serialize settlement per partition for deterministic holdings
+      max-retries: 3
+
+portfolio:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-prod-please-use-32+-bytes-secret}
+    issuer: ${JWT_ISSUER:hft-auth-service}
+  kafka:
+    trades-topic: trades
+    portfolio-events-topic: portfolio-events
+  cache:
+    portfolio-ttl-seconds: 10
+    market-price-ttl-millis: 2000
+  market-data:
+    base-url: ${MARKET_DATA_URL:http://localhost:8083}
+    timeout-ms: 1500
+  settlement:
+    optimistic-retry-max: 5
+
+logging:
+  level:
+    root: INFO
+    com.hft.portfolio: DEBUG

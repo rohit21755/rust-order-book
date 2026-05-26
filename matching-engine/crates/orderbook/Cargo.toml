@@ -1,0 +1,25 @@
+[package]
+name = "orderbook"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Limit order book + matching logic (no I/O)"
+
+[dependencies]
+rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+rust_decimal_macros = { workspace = true }
+
+[[bench]]
+name = "match_bench"
+harness = false

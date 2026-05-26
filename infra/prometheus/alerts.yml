@@ -1,0 +1,36 @@
+groups:
+  - name: hft-platform
+    interval: 30s
+    rules:
+      - alert: KafkaConsumerLagHigh
+        expr: max by (consumer_group, topic) (kafka_consumer_lag) > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer lag > 10k"
+          description: "{{ $labels.consumer_group }} on topic {{ $labels.topic }} lagging {{ $value }}"
+
+      - alert: MatchingEngineDown
+        expr: up{service="matching-engine"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Matching engine has no heartbeat for 30s"
+
+      - alert: RiskRejectionSpike
+        expr: sum(rate(risk_rejections_total[1m])) * 60 > 100
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Risk rejections > 100/min"
+
+      - alert: OrderProcessingLatencyHigh
+        expr: histogram_quantile(0.99, sum by (le, service) (rate(order_processing_latency_seconds_bucket[5m]))) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Order p99 latency > 500ms on {{ $labels.service }}"

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package hft.order.v1;
+
+// Mirrors com.hft.kafka.event.OrderEvent (JSON-compatible field names).
+message OrderEvent {
+  enum Type {
+    NEW = 0;
+    CANCEL = 1;
+    MODIFY = 2;
+  }
+  enum Side {
+    BUY = 0;
+    SELL = 1;
+  }
+  enum OrderType {
+    LIMIT = 0;
+    MARKET = 1;
+    STOP_LOSS = 2;
+  }
+
+  Type event_type = 1;
+  string order_id = 2;             // UUID
+  string user_id = 3;              // UUID
+  string symbol = 4;
+  Side side = 5;
+  OrderType order_type = 6;
+  string price = 7;                // Decimal as string
+  string stop_price = 8;
+  string quantity = 9;
+  string idempotency_key = 10;
+  int64 timestamp_ms = 11;
+}

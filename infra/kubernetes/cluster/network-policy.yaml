@@ -1,0 +1,140 @@
+# NetworkPolicy: each service only talks to its direct deps.
+# Default-deny in namespace; explicit allows below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny-all, namespace: hft-platform }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# DNS allowed everywhere.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-dns, namespace: hft-platform }
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{ namespaceSelector: {}, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+---
+# api-gateway: ingress from ingress controller; egress to all internal services.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: api-gateway, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: api-gateway } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { name: ingress-nginx } } }]
+      ports: [{ port: 8080 }]
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: auth-service } } }
+        - { podSelector: { matchLabels: { app: order-service } } }
+        - { podSelector: { matchLabels: { app: market-data-service } } }
+        - { podSelector: { matchLabels: { app: portfolio-service } } }
+        - { podSelector: { matchLabels: { app: risk-engine } } }
+---
+# auth-service: ingress from api-gateway; egress to postgres + redis.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: auth-service, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: auth-service } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: api-gateway } } }]
+      ports: [{ port: 8081 }]
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: postgres } } }
+        - { podSelector: { matchLabels: { app: redis } } }
+---
+# order-service: ingress from api-gateway; egress to postgres+redis+kafka+matching-engine(gRPC).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: order-service, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: order-service } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: api-gateway } } }]
+      ports: [{ port: 8082 }, { port: 9876 }]   # 9876 = FIX acceptor
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: postgres } } }
+        - { podSelector: { matchLabels: { app: redis } } }
+        - { podSelector: { matchLabels: { app: kafka } } }
+        - { podSelector: { matchLabels: { app: matching-engine } } }
+---
+# market-data-service: ingress from api-gateway + WS clients via ingress; egress to kafka+redis+clickhouse+matching-engine.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: market-data-service, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: market-data-service } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - { namespaceSelector: { matchLabels: { name: ingress-nginx } } }
+        - { podSelector: { matchLabels: { app: api-gateway } } }
+      ports: [{ port: 8083 }]
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: redis } } }
+        - { podSelector: { matchLabels: { app: kafka } } }
+        - { podSelector: { matchLabels: { app: matching-engine } } }
+---
+# portfolio-service: ingress from api-gateway + risk-engine; egress to postgres+redis+kafka+market-data.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: portfolio-service, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: portfolio-service } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - { podSelector: { matchLabels: { app: api-gateway } } }
+        - { podSelector: { matchLabels: { app: risk-engine } } }
+      ports: [{ port: 8084 }]
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: postgres } } }
+        - { podSelector: { matchLabels: { app: redis } } }
+        - { podSelector: { matchLabels: { app: kafka } } }
+        - { podSelector: { matchLabels: { app: market-data-service } } }
+---
+# risk-engine: ingress from api-gateway; egress to kafka+redis+portfolio+market-data.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: risk-engine, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: risk-engine } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: api-gateway } } }]
+      ports: [{ port: 8085 }]
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: kafka } } }
+        - { podSelector: { matchLabels: { app: redis } } }
+        - { podSelector: { matchLabels: { app: portfolio-service } } }
+        - { podSelector: { matchLabels: { app: market-data-service } } }
+---
+# matching-engine: ingress from order-service (gRPC) + scrape (Prometheus); egress to kafka+redis.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: matching-engine, namespace: hft-platform }
+spec:
+  podSelector: { matchLabels: { app: matching-engine } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - { podSelector: { matchLabels: { app: order-service } } }
+        - { namespaceSelector: { matchLabels: { name: monitoring } } }
+      ports: [{ port: 50051 }, { port: 9091 }]
+  egress:
+    - to:
+        - { podSelector: { matchLabels: { app: kafka } } }
+        - { podSelector: { matchLabels: { app: redis } } }

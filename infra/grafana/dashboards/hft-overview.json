@@ -1,0 +1,48 @@
+{
+  "uid": "hft-overview",
+  "title": "HFT Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["hft"],
+  "timezone": "browser",
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Order Throughput (1m rate)",
+      "gridPos": {"x":0,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"sum(rate(order_submissions_total[1m]))","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 2, "type": "stat", "title": "Trade Rate (1m rate)",
+      "gridPos": {"x":6,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"sum(rate(engine_trades_total[1m]))","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Active WS Connections",
+      "gridPos": {"x":12,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"sum(websocket_connections_active)","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 4, "type": "stat", "title": "Error Rate (5xx /min)",
+      "gridPos": {"x":18,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m]))*60","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Order Submissions by Symbol",
+      "gridPos": {"x":0,"y":4,"w":12,"h":8},
+      "targets": [{"expr":"sum by (symbol) (rate(order_submissions_total[1m]))","legendFormat":"{{symbol}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Risk Rejections by Reason",
+      "gridPos": {"x":12,"y":4,"w":12,"h":8},
+      "targets": [{"expr":"sum by (reason) (rate(risk_rejections_total[1m]))","legendFormat":"{{reason}}","refId":"A"}],
+      "datasource":{"type":"prometheus","uid":"prometheus"}
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-# ---- Stage 1: build shared-lib + order-service ----
+# ---- Stage 1: build shared-lib + shared-grpc-lib + order-service ----
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 
@@ -7,6 +7,11 @@ WORKDIR /workspace
 COPY services/shared-lib/pom.xml shared-lib/pom.xml
 COPY services/shared-lib/src shared-lib/src
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -f shared-lib/pom.xml -DskipTests install
+
+# shared-grpc-lib (protoc downloaded by protobuf-maven-plugin; no system protoc needed)
+COPY services/shared-grpc-lib/pom.xml shared-grpc-lib/pom.xml
+COPY services/shared-grpc-lib/src shared-grpc-lib/src
+RUN --mount=type=cache,target=/root/.m2 mvn -B -q -f shared-grpc-lib/pom.xml -DskipTests install
 
 COPY services/order-service/pom.xml order-service/pom.xml
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -f order-service/pom.xml -DskipTests dependency:go-offline

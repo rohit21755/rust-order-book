@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: matching-engine-config, namespace: hft-platform }
+data:
+  MATCHING__KAFKA__BOOTSTRAP_SERVERS: "kafka:9092"
+  MATCHING__REDIS__URL: "redis://redis:6379"
+  MATCHING__GRPC__BIND_ADDR: "0.0.0.0:50051"
+  MATCHING__METRICS__BIND_ADDR: "0.0.0.0:9091"
+  RUST_LOG: "info,matching_engine=debug"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: matching-engine, namespace: hft-platform, labels: { app: matching-engine } }
+spec:
+  # Single replica per symbol partition for deterministic match ordering.
+  # Scale horizontally by sharding symbols across replicas (consumer-group partition assignment).
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: matching-engine } }
+  template:
+    metadata:
+      labels: { app: matching-engine }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9091"
+    spec:
+      containers:
+        - name: matching-engine
+          image: hft/matching-engine:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { containerPort: 50051, name: grpc }
+            - { containerPort: 9091,  name: metrics }
+          envFrom:
+            - configMapRef: { name: matching-engine-config }
+          resources:
+            requests: { cpu: "1",   memory: "512Mi" }
+            limits:   { cpu: "4",   memory: "2Gi" }
+          readinessProbe: { httpGet: { path: /healthz, port: 9091 }, initialDelaySeconds: 15, periodSeconds: 5 }
+          livenessProbe:  { httpGet: { path: /healthz, port: 9091 }, initialDelaySeconds: 30, periodSeconds: 15 }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: matching-engine, namespace: hft-platform }
+spec:
+  type: ClusterIP
+  selector: { app: matching-engine }
+  ports:
+    - { name: grpc,    port: 50051, targetPort: 50051 }
+    - { name: metrics, port: 9091,  targetPort: 9091 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: matching-engine, namespace: hft-platform }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: matching-engine }
+  minReplicas: 1
+  maxReplicas: 6        # Caller must ensure each replica owns disjoint symbol set.
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

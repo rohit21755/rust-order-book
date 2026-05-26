@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package hft.matching.v1;
+
+option java_multiple_files = true;
+option java_package = "com.hft.matching.grpc";
+option java_outer_classname = "MatchingEngineProto";
+
+// ---- Service ----
+
+service MatchingEngineService {
+  // Top-N orderbook snapshot for a symbol.
+  rpc GetOrderBook(OrderBookRequest) returns (OrderBookResponse);
+
+  // Engine health + uptime + cumulative counters.
+  rpc GetEngineHealth(Empty) returns (HealthResponse);
+
+  // Per-order status (live + recent terminal states the engine still remembers).
+  rpc GetOrderStatus(OrderStatusRequest) returns (OrderStatusResponse);
+
+  // Cancel an order directly inside the engine; bypasses Kafka for low latency.
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+}
+
+// ---- Common ----
+
+message Empty {}
+
+// All monetary fields are strings (Decimal serialized) — never float/double.
+message PriceLevel {
+  string price = 1;
+  string quantity = 2;
+  int32  order_count = 3;
+}
+
+// ---- GetOrderBook ----
+
+message OrderBookRequest {
+  string symbol = 1;
+  // Optional cap on levels returned per side; 0 → engine default (20).
+  int32 depth = 2;
+}
+
+message OrderBookResponse {
+  string symbol = 1;
+  repeated PriceLevel bids = 2;
+  repeated PriceLevel asks = 3;
+  uint64 sequence = 4;
+  int64  timestamp_ms = 5;
+}
+
+// ---- GetEngineHealth ----
+
+enum HealthStatus {
+  UNKNOWN = 0;
+  SERVING = 1;
+  NOT_SERVING = 2;
+  DEGRADED = 3;
+}
+
+message HealthResponse {
+  HealthStatus status = 1;
+  uint64 orders_processed = 2;
+  uint64 trades_executed = 3;
+  uint64 uptime_ms = 4;
+  string version = 5;
+}
+
+// ---- GetOrderStatus ----
+
+enum EngineOrderState {
+  OS_UNKNOWN = 0;
+  OS_RESTING = 1;
+  OS_PARTIAL_FILL = 2;
+  OS_FILLED = 3;
+  OS_CANCELLED = 4;
+  OS_REJECTED = 5;
+  OS_NOT_FOUND = 6;
+}
+
+message OrderStatusRequest {
+  string order_id = 1;
+  string symbol = 2;
+}
+
+message OrderStatusResponse {
+  string order_id = 1;
+  string symbol = 2;
+  EngineOrderState state = 3;
+  string remaining_quantity = 4;
+  string filled_quantity = 5;
+  string avg_fill_price = 6;
+}
+
+// ---- CancelOrder ----
+
+message CancelOrderRequest {
+  string order_id = 1;
+  string symbol = 2;
+  // For audit: who initiated the cancel.
+  string user_id = 3;
+}
+
+enum CancelResult {
+  CR_UNKNOWN = 0;
+  CR_CANCELLED = 1;
+  CR_NOT_FOUND = 2;
+  CR_ALREADY_TERMINAL = 3;
+}
+
+message CancelOrderResponse {
+  string order_id = 1;
+  CancelResult result = 2;
+  string message = 3;
+}

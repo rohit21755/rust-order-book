@@ -1,0 +1,17 @@
+syntax = "proto3";
+package hft.orderbook.v1;
+
+message Level {
+  string price = 1;     // Decimal as string
+  string quantity = 2;  // Decimal as string
+}
+
+message OrderBookUpdate {
+  string symbol = 1;
+  uint64 sequence = 2;
+  enum Type { SNAPSHOT = 0; DELTA = 1; }
+  Type update_type = 3;
+  repeated Level bids = 4;
+  repeated Level asks = 5;
+  int64 timestamp_ms = 6;
+}
